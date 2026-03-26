@@ -153,23 +153,41 @@ if st.button("Mulai Pemindaian Fast Swing"):
         status_text.text(f"Memindai {kode}... ({i+1}/{total_saham})")
         try:
             saham = yf.Ticker(kode)
-            data = saham.history(period="2mo") 
+            data = saham.history(period="3mo") # Diperpanjang sedikit ke 3mo agar perhitungan RSI lebih akurat
             
             if len(data) > 25:
                 data['MA20'] = data['Close'].rolling(window=20).mean()
                 data['Vol_Avg'] = data['Volume'].rolling(window=20).mean()
                 
+                # --- KALKULASI SENSOR RSI ---
+                delta = data['Close'].diff()
+                up = delta.clip(lower=0)
+                down = -1 * delta.clip(upper=0)
+                ema_up = up.ewm(com=13, adjust=False).mean()
+                ema_down = down.ewm(com=13, adjust=False).mean()
+                rs = ema_up / ema_down
+                data['RSI'] = 100 - (100 / (1 + rs))
+                
                 harga_terakhir = float(data['Close'].iloc[-1])
                 ma20_terakhir = float(data['MA20'].iloc[-1])
                 vol_terakhir = float(data['Volume'].iloc[-1])
                 vol_avg_terakhir = float(data['Vol_Avg'].iloc[-1])
+                rsi_terakhir = float(data['RSI'].iloc[-1])
                 
-                area_beli, stop_loss, risk_level, kekuatan_tren = "-", "-", "-", "-"
+                area_beli, stop_loss, risk_level, kekuatan_tren, status_rsi = "-", "-", "-", "-", "-"
                 tp1_str, tp2_str, tp3_str = "-", "-", "-"
                 sinyal = "WAIT"
                 
                 if (harga_terakhir > ma20_terakhir) and (vol_terakhir > vol_avg_terakhir):
                     sinyal = "🔥 BUY (MINGGUAN)"
+                    
+                    # --- LOGIKA STATUS RSI ---
+                    if rsi_terakhir > 70:
+                        status_rsi = f"🔥 {rsi_terakhir:.0f} (Overbought)"
+                    elif rsi_terakhir < 30:
+                        status_rsi = f"❄️ {rsi_terakhir:.0f} (Oversold)"
+                    else:
+                        status_rsi = f"✅ {rsi_terakhir:.0f} (Normal)"
                     
                     rasio_vol = vol_terakhir / vol_avg_terakhir
                     if rasio_vol >= 2.0: kekuatan_tren = "🔥 Sangat Kuat"
@@ -217,6 +235,7 @@ if st.button("Mulai Pemindaian Fast Swing"):
                     "Kode Saham": kode.replace(".JK", ""),
                     "Kode Asli": kode,
                     "Sinyal": sinyal,
+                    "RSI (Suhu)": status_rsi, # <-- KOLOM BARU RSI
                     "Tren": kekuatan_tren,
                     "Risiko": risk_level,
                     "Area Beli": area_beli,
@@ -238,8 +257,11 @@ if st.button("Mulai Pemindaian Fast Swing"):
         
         st.subheader("🎯 Trading Plan (Strategi Fast Swing)")
         if not df_potensi.empty:
-            kolom_urut = ["Kode Saham", "Sinyal", "Tren", "Risiko", "Area Beli", "SL", "TP1 (5H)", "TP2 (10H)", "TP3 (20H)"]
+            # MEMASUKKAN RSI KE DALAM URUTAN TABEL TAMPILAN
+            kolom_urut = ["Kode Saham", "Sinyal", "RSI (Suhu)", "Tren", "Risiko", "Area Beli", "SL", "TP1 (5H)", "TP2 (10H)", "TP3 (20H)"]
             st.dataframe(df_potensi[kolom_urut].reset_index(drop=True), use_container_width=True)
+            
+            st.info("💡 **Tips RSI:** Jika saham bersinyal BUY tapi status RSI-nya **🔥 Overbought (>70)**, pertimbangkan untuk menunda pembelian karena harga sudah rawan dibanting turun sementara waktu.")
             
             st.markdown("### 📰 Shortcut Sentimen & Berita")
             kolom_berita = st.columns(len(df_potensi))
