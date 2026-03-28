@@ -69,7 +69,7 @@ with st.sidebar:
     st.subheader("🔑 Status Otak AI")
     
     # TEMPELKAN KUNCI ANDA DI DALAM TANDA KUTIP DI BAWAH INI:
-    api_key_dysania = "AIzaSyCpgxYKipeznKTsxxBfVTyT2udGJvWO15k" 
+    api_key_dysania = "AIzaSyCZjFMh4PzStNRbBZDqgghX9M9I5LxTOBY" 
     
     try:
         genai.configure(api_key=api_key_dysania)
@@ -114,7 +114,7 @@ with st.sidebar:
     st.info(f"**Status:** {status_waktu}\n\n**Aksi:** {saran_aksi}")
 
 # --- HALAMAN UTAMA KANAN ---
-st.title("📊 Dashbord Cuaca Pasar & Analisis")
+st.title("📊 Dashbord Kondisi Pasar & Analisa")
 st.write("Sistem Top-Down Analysis: Prediksi arah IHSG berdasarkan sentimen Global dan Teknikal.")
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -247,8 +247,8 @@ except Exception as e:
 
 # --- 4. KACA PEMBESAR SAHAM (SUPER DIAGNOSTIC DENGAN AI) ---
 st.markdown("---")
-st.subheader("🔍 Kaca Pembesar Saham & Analisis AI Dysania")
-st.write("Mendiagnosis anatomi saham secara detail meliputi Tren, Volume, Jejak Smart Money, lalu dianalisis langsung oleh Otak AI Gemini Pro.")
+st.subheader("🔍 Cari Saham & Analisa AI Dysania")
+st.write("Mendiagnosis anatomi saham secara detail meliputi Tren, Volume, Jejak Smart Money, lalu dianalisis langsung oleh Otak AI Dysania.")
 
 col_search, col_btn = st.columns([3, 1])
 
@@ -306,7 +306,7 @@ if btn_search and ticker_input:
                 c4.metric("Suhu Saham (RSI)", f"{rsi:.1f}", rsi_status, delta_color="off")
 
                 # 4. MEMBANGUNKAN OTAK AI UNTUK ANALISIS
-                st.markdown("### 🧠 Analisis Eksklusif Dysania (Gemini Pro)")
+                st.markdown("### 🧠 Analisis Eksklusif AI Dysania")
                 if api_key_dysania:
                     prompt_rahasia = f"""
                     Anda adalah 'Dysania', seorang asisten Pro-Trader saham Indonesia yang sangat jenius, dingin, objektif, dan taktis. 
