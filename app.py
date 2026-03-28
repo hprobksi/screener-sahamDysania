@@ -65,9 +65,6 @@ with st.sidebar:
     st.title("Dysania")
     st.markdown("---")
     
-    # MENANAMKAN API KEY SECARA PERMANEN (LOKAL)
-    st.subheader("🔑 Status Otak AI")
-    
   # MENGAMBIL KUNCI DARI BRANKAS RAHASIA STREAMLIT
     st.subheader("🔑 Kunci Akses Otak")
     try:
