@@ -68,16 +68,14 @@ with st.sidebar:
     # MENANAMKAN API KEY SECARA PERMANEN (LOKAL)
     st.subheader("🔑 Status Otak AI")
     
-   # MENGAMBIL KUNCI DARI BRANKAS RAHASIA STREAMLIT
+  # MENGAMBIL KUNCI DARI BRANKAS RAHASIA STREAMLIT
+    st.subheader("🔑 Kunci Akses Otak")
     try:
         api_key_dysania = st.secrets["GEMINI_API_KEY"]
         genai.configure(api_key=api_key_dysania)
         st.success("🧠 Otak Dysania Aktif! (Mode Flash)")
     except Exception as e:
-        st.error("⚠️ API Key tidak ditemukan di brankas Secrets.")=api_key_dysania)
-        st.success("🧠 Otak Dysania Aktif! (Mode Pro)")
-    except Exception as e:
-        st.error(f"Gagal menghubungkan otak AI: {e}")
+        st.error("⚠️ API Key tidak ditemukan di brankas Secrets.")
         
     st.markdown("---")
     
