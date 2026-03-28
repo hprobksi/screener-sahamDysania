@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import urllib.request
 import xml.etree.ElementTree as ET
 import streamlit.components.v1 as components
+import google.generativeai as genai
 
 # Set Layout Full Width
 st.set_page_config(page_title="Screener Saham Pro", layout="wide", initial_sidebar_state="expanded")
@@ -57,11 +58,29 @@ def create_card(title, value, delta, color_class):
     </div>
     """
 
+
 # --- 1. SIDEBAR (PANEL SEBELAH KIRI) ---
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/2942/2942267.png", width=80) 
-    st.title("Menu Navigasi")
+    st.image("profil.jpg", width=150) 
+    st.title("Dysania")
     st.markdown("---")
+    
+    # MENANAMKAN API KEY SECARA PERMANEN (LOKAL)
+    st.subheader("🔑 Status Otak AI")
+    
+    # TEMPELKAN KUNCI ANDA DI DALAM TANDA KUTIP DI BAWAH INI:
+    api_key_dysania = "AIzaSyCpgxYKipeznKTsxxBfVTyT2udGJvWO15k" 
+    
+    try:
+        genai.configure(api_key=api_key_dysania)
+        st.success("🧠 Otak Dysania Aktif! (Mode Pro)")
+    except Exception as e:
+        st.error(f"Gagal menghubungkan otak AI: {e}")
+        
+    st.markdown("---")
+    
+    # ... (lanjutkan ke kode Waktu Sistem) ...
+    # ... (lanjutkan ke kode Waktu Sistem) ...
     
     tz = pytz.timezone('Asia/Jakarta')
     sekarang = datetime.now(tz)
@@ -95,7 +114,7 @@ with st.sidebar:
     st.info(f"**Status:** {status_waktu}\n\n**Aksi:** {saran_aksi}")
 
 # --- HALAMAN UTAMA KANAN ---
-st.title("📊 Dasbor Cuaca Pasar & Analisis")
+st.title("📊 Dashbord Cuaca Pasar & Analisis")
 st.write("Sistem Top-Down Analysis: Prediksi arah IHSG berdasarkan sentimen Global dan Teknikal.")
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -226,38 +245,37 @@ except Exception as e:
     st.error("Gagal menyedot data berita lokal. Pastikan koneksi internet server stabil.")
 
 
-# --- 4. KACA PEMBESAR SAHAM (SUPER DIAGNOSTIC) ---
+# --- 4. KACA PEMBESAR SAHAM (SUPER DIAGNOSTIC DENGAN AI) ---
 st.markdown("---")
-st.subheader("🔍 Kaca Pembesar Saham (Super Diagnostic)")
-st.write("Mendiagnosis anatomi saham secara detail meliputi Tren, Volume, dan Jejak Smart Money.")
+st.subheader("🔍 Kaca Pembesar Saham & Analisis AI Dysania")
+st.write("Mendiagnosis anatomi saham secara detail meliputi Tren, Volume, Jejak Smart Money, lalu dianalisis langsung oleh Otak AI Gemini Pro.")
 
 col_search, col_btn = st.columns([3, 1])
+
 with col_search:
     ticker_input = st.text_input("Ketik Kode Saham:", placeholder="Maksimal 4 Huruf, misal: NZIA").upper()
+
 with col_btn:
     st.write(""); st.write("") 
     btn_search = st.button("Bedah Saham Ini", use_container_width=True)
 
 if btn_search and ticker_input:
-    # Mengatur format kode saham untuk Yahoo Finance dan TradingView
     ticker_yf = ticker_input + ".JK" if not ticker_input.endswith(".JK") else ticker_input
     ticker_tv = f"IDX:{ticker_input.replace('.JK', '')}"
 
-    with st.spinner(f"Mendiagnosis anatomi {ticker_input}..."):
+    with st.spinner(f"Dysania sedang mengunduh anatomi {ticker_input}..."):
         try:
             data_c = yf.Ticker(ticker_yf).history(period="3mo")
             if len(data_c) > 30:
-                # 1. KALKULASI INDIKATOR (Sama seperti otak mesin Screener)
+                # 1. KALKULASI INDIKATOR MATEMATIS
                 data_c['MA20'] = data_c['Close'].rolling(window=20).mean()
                 data_c['Vol_Avg'] = data_c['Volume'].rolling(window=20).mean()
                 
-                # RSI
                 delta = data_c['Close'].diff()
                 up, down = delta.clip(lower=0), -1 * delta.clip(upper=0)
                 rs = up.ewm(com=13, adjust=False).mean() / down.ewm(com=13, adjust=False).mean()
                 data_c['RSI'] = 100 - (100 / (1 + rs))
                 
-                # OBV (Smart Money)
                 arah_harga = delta.apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
                 data_c['OBV'] = (arah_harga * data_c['Volume']).cumsum()
                 data_c['OBV_MA20'] = data_c['OBV'].rolling(window=20).mean()
@@ -268,7 +286,7 @@ if btn_search and ticker_input:
                 rsi = float(data_c['RSI'].iloc[-1])
                 obv, obv_ma = float(data_c['OBV'].iloc[-1]), float(data_c['OBV_MA20'].iloc[-1])
 
-                # 3. LOGIKA DIAGNOSA
+                # PERBAIKAN: Menyederhanakan teks agar muncul sempurna di kartu metrik
                 trend_status = "🟢 UPTREND" if hc > mc else "🔴 DOWNTREND"
                 vol_status = "🔥 Meledak" if vol > vol_avg else "💤 Sepi"
                 sm_status = "🐳 AKUMULASI" if obv > obv_ma else "🩸 DISTRIBUSI"
@@ -277,56 +295,52 @@ if btn_search and ticker_input:
                 elif rsi < 30: rsi_status = "❄️ Oversold"
                 else: rsi_status = "✅ Normal"
 
-                # 4. TAMPILAN PANEL DIAGNOSTIK
-                st.markdown(f"### 🩺 Hasil Diagnosa Lengkap: **{ticker_input.replace('.JK', '')}**")
-                
-                # Deretan Metrik Layaknya Dashboard Mobil
+                # 3. TAMPILAN PANEL DIAGNOSTIK ANGKA
+                st.markdown(f"### 🩺 Parameter Kuantitatif: **{ticker_input.replace('.JK', '')}**")
                 c1, c2, c3, c4 = st.columns(4)
+                
+                # PERBAIKAN: Memasukkan variabel secara langsung tanpa dipotong (.split)
                 c1.metric("Tren (MA20)", trend_status, f"Rp {hc:,.0f}")
                 c2.metric("Jejak Smart Money", sm_status)
                 c3.metric("Volume Transaksi", vol_status)
                 c4.metric("Suhu Saham (RSI)", f"{rsi:.1f}", rsi_status, delta_color="off")
 
-                # --- SUNTIKAN KODE KESIMPULAN SUPER DETAIL ---
-                st.markdown("### 🤖 Analisis Mendalam & Strategi AI")
+                # 4. MEMBANGUNKAN OTAK AI UNTUK ANALISIS
+                st.markdown("### 🧠 Analisis Eksklusif Dysania (Gemini Pro)")
+                if api_key_dysania:
+                    prompt_rahasia = f"""
+                    Anda adalah 'Dysania', seorang asisten Pro-Trader saham Indonesia yang sangat jenius, dingin, objektif, dan taktis. 
+                    Anda menggunakan pendekatan Top-Down Analysis dan Bandarmologi.
+                    
+                    Saya baru saja menscan saham {ticker_input.replace('.JK', '')} di Bursa Efek Indonesia. Berikut adalah data kuantitatif penutupan terakhirnya:
+                    - Harga Terakhir: Rp {hc:,.0f}
+                    - Posisi terhadap MA20: Rp {mc:,.0f} (Status: {trend_status})
+                    - Volume Transaksi hari ini: {vol_status}
+                    - Jejak Smart Money (Indikator OBV): Bandar sedang {sm_status}
+                    - Suhu Saham (RSI): {rsi:.1f} ({rsi_status})
+                    
+                    Tugas Anda:
+                    1. Bicaralah langsung kepada saya sebagai Dysania. Jangan mengulang data angka mentah di atas seperti robot, sintesiskan data tersebut menjadi sebuah cerita pergerakan pasar!
+                    2. Bongkar niat Bandar! Apakah kenaikan/penurunan harga ini sinkron dengan volume dan Smart Money? Adakah anomali seperti Bull Trap (naik tapi bandar jualan) atau Mark-Down Accumulation (turun tapi bandar nampung)?
+                    3. Berikan 'SOP Swing Trading' yang tegas (contoh: "Antre beli di area X", "Hold ketat", "Pantau dulu", atau "Jauhi/Jangan tangkap pisau jatuh").
+                    
+                    Format output: Gunakan paragraf yang enak dibaca, gunakan bold untuk penekanan, dan jadilah asisten trading yang elegan dan kejam terhadap risiko.
+                    """
+                    
+                    with st.spinner("Dysania sedang meracik strategi berdasarkan data terkini..."):
+                        try:
+                            # PERBAIKAN: Mengganti nama model ke versi yang paling stabil untuk API
+                            # Menggunakan otak Gemini 1.5 Flash yang super stabil dan cepat
+                            model = genai.GenerativeModel('gemini-2.5-flash')
+                            respon_ai = model.generate_content(prompt_rahasia)
+                            
+                            st.info(respon_ai.text)
+                        except Exception as e:
+                            st.error(f"Gagal memanggil otak AI. Pastikan API Key valid. Error: {e}")
+                else:
+                    st.warning("⚠️ Otak Dysania tertidur. Masukkan API Key Gemini di Sidebar sebelah kiri untuk mendapatkan analisis taktis otomatis.")
                 
-                if trend_status == "🟢 UPTREND":
-                    if sm_status == "🐳 AKUMULASI" and vol_status == "🔥 Meledak":
-                        if rsi < 70:
-                            st.success("🎯 **STATUS: BINTANG LIMA (SANGAT SEHAT)**\n\n"
-                                     "* **Kondisi:** Tren menanjak kuat, divalidasi oleh guyuran dana besar (Bandar masuk) dan antusiasme pasar yang tinggi (Volume Meledak).\n"
-                                     "* **Posisi Suhu:** Masih aman, belum masuk fase *Overbought* (kepanasan).\n"
-                                     "* **Tindakan (SOP Swing):** **LAYAK ENTRY**. Silakan antre beli di dekat harga penutupan atau cicil saat koreksi tipis menyentuh MA20. Pasang Stop Loss di bawah garis MA20.")
-                        else:
-                            st.warning("🔥 **STATUS: TREN KUAT TAPI KEPANASAN (RAWAN KOREKSI)**\n\n"
-                                     "* **Kondisi:** Saham sedang dikerek naik oleh Bandar dengan volume besar. Tren sangat bagus.\n"
-                                     "* **Masalah (RSI):** Sensor suhu menunjukkan saham sudah *Overbought* (>70). Ibarat trafo, sistem sedang *overheating* dan butuh pendinginan sementara.\n"
-                                     "* **Tindakan (SOP Swing):** **TAHAN DULU (WAIT)**. Jangan kejar harga di pucuk (FOMO). Tunggu harga mendingin (*pullback*) mendekati area MA20 untuk beli dengan risiko lebih rendah.")
-                    elif sm_status == "🩸 DISTRIBUSI":
-                        st.warning("🤥 **STATUS: ANOMALI NAIK (WASPADA BULL TRAP)**\n\n"
-                                 "* **Kondisi:** Harga memang berada di atas MA20 (Uptrend), TAPI indikator Smart Money mendeteksi uang sedang keluar perlahan (Distribusi).\n"
-                                 "* **Analisis:** Kenaikan harga ini kemungkinan dimanfaatkan oleh Bandar untuk *mark-up* (mengerek harga pakai lot kecil) sambil membuang barang ke *trader* ritel.\n"
-                                 "* **Tindakan (SOP Swing):** **HINDARI ENTRY BARU**. Jika sudah punya barang, segera pasang Trailing Stop ketat untuk mengamankan profit.")
-                    else:
-                        st.info("⚖️ **STATUS: UPTREND NORMAL (FASE KONSOLIDASI)**\n\n"
-                                "* **Kondisi:** Tren stabil di atas MA20, tapi volume relatif sepi dan belum ada akumulasi agresif dari Bandar.\n"
-                                "* **Tindakan (SOP Swing):** **PANTAU KETAT (WATCHLIST)**. Saham sedang mengumpulkan tenaga. Tunggu hingga muncul *candle* hijau dengan 'Volume Meledak' sebagai sinyal konfirmasi untuk *entry*.")
-
-                elif trend_status == "🔴 DOWNTREND":
-                    if sm_status == "🐳 AKUMULASI":
-                        st.info("🕵️ **STATUS: ANOMALI TURUN (FASE MARK-DOWN / ACCUMULATION)**\n\n"
-                                "* **Kondisi:** Harga anjlok di bawah MA20, TAPI Smart Money malah mendeteksi adanya Uang Masuk (Akumulasi).\n"
-                                "* **Analisis:** Ini sering terjadi saat Bandar sengaja menjatuhkan harga untuk memicu kepanikan (Cut Loss Ritel), sementara mereka diam-diam menampung barang di harga bawah.\n"
-                                "* **Tindakan (SOP Swing):** **JANGAN TANGKAP PISAU JATUH**. Masukkan ke *Watchlist* utama Anda. Tunggu sampai harga berbalik arah menembus garis MA20 ke atas, baru lakukan pembelian.")
-                    else:
-                        st.error("☠️ **STATUS: SAKIT PARAH (DOWNTREND + DISTRIBUSI)**\n\n"
-                                 "* **Kondisi:** Secara teknikal harga rusak (di bawah MA20), diperparah dengan Bandar yang terus jualan buang barang.\n"
-                                 "* **Analisis:** Jika ada *candle* hijau panjang di fase ini (seperti kasus NZIA), itu 90% hanyalah *Dead Cat Bounce* (pantulan jebakan / teknikal rebound sesaat) sebelum longsor lebih dalam.\n"
-                                 "* **Tindakan (SOP Swing):** **JAUHI SAHAM INI**. Jangan pernah melawan tren turun yang divalidasi oleh keluarnya uang besar.")
-                # --- BATAS SUNTIKAN KODE ---
-
-                # 5. MENANAMKAN GRAFIK TRADINGVIEW (Ala Stockbit)
-                import streamlit.components.v1 as components
+                # 5. MENANAMKAN GRAFIK TRADINGVIEW
                 st.markdown("<br>", unsafe_allow_html=True)
                 components.html(f"""
                 <div class="tradingview-widget-container">
@@ -360,7 +374,7 @@ if btn_search and ticker_input:
                 """, height=500)
 
             else:
-                st.error("Data saham tidak ditemukan. Pastikan kodenya benar.")
+                st.error("Data saham tidak ditemukan. Pastikan kodenya benar (Maksimal 4 huruf).")
         except Exception as e:
             st.error(f"Gagal menarik data. Error: {e}")
 
