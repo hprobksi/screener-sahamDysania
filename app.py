@@ -226,42 +226,143 @@ except Exception as e:
     st.error("Gagal menyedot data berita lokal. Pastikan koneksi internet server stabil.")
 
 
-# --- 4. ANALISA SAHAM SPESIFIK (KACA PEMBESAR) ---
+# --- 4. KACA PEMBESAR SAHAM (SUPER DIAGNOSTIC) ---
 st.markdown("---")
-st.subheader("🔍 Kaca Pembesar Saham (Luar LQ45)")
+st.subheader("🔍 Kaca Pembesar Saham (Super Diagnostic)")
+st.write("Mendiagnosis anatomi saham secara detail meliputi Tren, Volume, dan Jejak Smart Money.")
+
 col_search, col_btn = st.columns([3, 1])
 with col_search:
-    ticker_input = st.text_input("Ketik Kode Saham:", placeholder="Maksimal 4 Huruf, misal: CUAN").upper()
+    ticker_input = st.text_input("Ketik Kode Saham:", placeholder="Maksimal 4 Huruf, misal: NZIA").upper()
 with col_btn:
-    st.write("") 
-    st.write("") 
-    btn_search = st.button("Pindai Saham Ini", use_container_width=True)
+    st.write(""); st.write("") 
+    btn_search = st.button("Bedah Saham Ini", use_container_width=True)
 
 if btn_search and ticker_input:
+    # Mengatur format kode saham untuk Yahoo Finance dan TradingView
     ticker_yf = ticker_input + ".JK" if not ticker_input.endswith(".JK") else ticker_input
-    with st.spinner(f"Mencari data {ticker_input}..."):
+    ticker_tv = f"IDX:{ticker_input.replace('.JK', '')}"
+
+    with st.spinner(f"Mendiagnosis anatomi {ticker_input}..."):
         try:
-            saham_custom = yf.Ticker(ticker_yf)
-            data_c = saham_custom.history(period="3mo")
+            data_c = yf.Ticker(ticker_yf).history(period="3mo")
             if len(data_c) > 30:
+                # 1. KALKULASI INDIKATOR (Sama seperti otak mesin Screener)
                 data_c['MA20'] = data_c['Close'].rolling(window=20).mean()
+                data_c['Vol_Avg'] = data_c['Volume'].rolling(window=20).mean()
+                
+                # RSI
+                delta = data_c['Close'].diff()
+                up, down = delta.clip(lower=0), -1 * delta.clip(upper=0)
+                rs = up.ewm(com=13, adjust=False).mean() / down.ewm(com=13, adjust=False).mean()
+                data_c['RSI'] = 100 - (100 / (1 + rs))
+                
+                # OBV (Smart Money)
+                arah_harga = delta.apply(lambda x: 1 if x > 0 else (-1 if x < 0 else 0))
+                data_c['OBV'] = (arah_harga * data_c['Volume']).cumsum()
+                data_c['OBV_MA20'] = data_c['OBV'].rolling(window=20).mean()
+
+                # 2. AMBIL NILAI TERAKHIR
                 hc, mc = float(data_c['Close'].iloc[-1]), float(data_c['MA20'].iloc[-1])
-                st.markdown(f"### Hasil Bedah Saham: **{ticker_input}**")
+                vol, vol_avg = float(data_c['Volume'].iloc[-1]), float(data_c['Vol_Avg'].iloc[-1])
+                rsi = float(data_c['RSI'].iloc[-1])
+                obv, obv_ma = float(data_c['OBV'].iloc[-1]), float(data_c['OBV_MA20'].iloc[-1])
+
+                # 3. LOGIKA DIAGNOSA
+                trend_status = "🟢 UPTREND" if hc > mc else "🔴 DOWNTREND"
+                vol_status = "🔥 Meledak" if vol > vol_avg else "💤 Sepi"
+                sm_status = "🐳 AKUMULASI" if obv > obv_ma else "🩸 DISTRIBUSI"
                 
-                if hc > mc:
-                    st.success(f"🔥 POTENSI NAIK (Harga Rp {hc:,.0f} > MA20 Rp {mc:,.0f})")
-                else:
-                    st.error(f"⚠️ DOWNTREND (Harga Rp {hc:,.0f} < MA20 Rp {mc:,.0f})")
+                if rsi > 70: rsi_status = "🔥 Overbought"
+                elif rsi < 30: rsi_status = "❄️ Oversold"
+                else: rsi_status = "✅ Normal"
+
+                # 4. TAMPILAN PANEL DIAGNOSTIK
+                st.markdown(f"### 🩺 Hasil Diagnosa Lengkap: **{ticker_input.replace('.JK', '')}**")
                 
-                df_c_chart = data_c.tail(40) 
-                fig_c = go.Figure(data=[go.Candlestick(x=df_c_chart.index, open=df_c_chart['Open'], high=df_c_chart['High'], low=df_c_chart['Low'], close=df_c_chart['Close'], name=ticker_input)])
-                fig_c.add_trace(go.Scatter(x=df_c_chart.index, y=df_c_chart['MA20'], line=dict(color='orange', width=2), name='MA20'))
-                fig_c.update_layout(title=f'Grafik {ticker_input}', yaxis_title='Harga Saham', xaxis_rangeslider_visible=False, height=350, margin=dict(l=0, r=0, t=40, b=0), template="plotly_white")
-                st.plotly_chart(fig_c, use_container_width=True)
+                # Deretan Metrik Layaknya Dashboard Mobil
+                c1, c2, c3, c4 = st.columns(4)
+                c1.metric("Tren (MA20)", trend_status, f"Rp {hc:,.0f}")
+                c2.metric("Jejak Smart Money", sm_status)
+                c3.metric("Volume Transaksi", vol_status)
+                c4.metric("Suhu Saham (RSI)", f"{rsi:.1f}", rsi_status, delta_color="off")
+
+                # --- SUNTIKAN KODE KESIMPULAN SUPER DETAIL ---
+                st.markdown("### 🤖 Analisis Mendalam & Strategi AI")
+                
+                if trend_status == "🟢 UPTREND":
+                    if sm_status == "🐳 AKUMULASI" and vol_status == "🔥 Meledak":
+                        if rsi < 70:
+                            st.success("🎯 **STATUS: BINTANG LIMA (SANGAT SEHAT)**\n\n"
+                                     "* **Kondisi:** Tren menanjak kuat, divalidasi oleh guyuran dana besar (Bandar masuk) dan antusiasme pasar yang tinggi (Volume Meledak).\n"
+                                     "* **Posisi Suhu:** Masih aman, belum masuk fase *Overbought* (kepanasan).\n"
+                                     "* **Tindakan (SOP Swing):** **LAYAK ENTRY**. Silakan antre beli di dekat harga penutupan atau cicil saat koreksi tipis menyentuh MA20. Pasang Stop Loss di bawah garis MA20.")
+                        else:
+                            st.warning("🔥 **STATUS: TREN KUAT TAPI KEPANASAN (RAWAN KOREKSI)**\n\n"
+                                     "* **Kondisi:** Saham sedang dikerek naik oleh Bandar dengan volume besar. Tren sangat bagus.\n"
+                                     "* **Masalah (RSI):** Sensor suhu menunjukkan saham sudah *Overbought* (>70). Ibarat trafo, sistem sedang *overheating* dan butuh pendinginan sementara.\n"
+                                     "* **Tindakan (SOP Swing):** **TAHAN DULU (WAIT)**. Jangan kejar harga di pucuk (FOMO). Tunggu harga mendingin (*pullback*) mendekati area MA20 untuk beli dengan risiko lebih rendah.")
+                    elif sm_status == "🩸 DISTRIBUSI":
+                        st.warning("🤥 **STATUS: ANOMALI NAIK (WASPADA BULL TRAP)**\n\n"
+                                 "* **Kondisi:** Harga memang berada di atas MA20 (Uptrend), TAPI indikator Smart Money mendeteksi uang sedang keluar perlahan (Distribusi).\n"
+                                 "* **Analisis:** Kenaikan harga ini kemungkinan dimanfaatkan oleh Bandar untuk *mark-up* (mengerek harga pakai lot kecil) sambil membuang barang ke *trader* ritel.\n"
+                                 "* **Tindakan (SOP Swing):** **HINDARI ENTRY BARU**. Jika sudah punya barang, segera pasang Trailing Stop ketat untuk mengamankan profit.")
+                    else:
+                        st.info("⚖️ **STATUS: UPTREND NORMAL (FASE KONSOLIDASI)**\n\n"
+                                "* **Kondisi:** Tren stabil di atas MA20, tapi volume relatif sepi dan belum ada akumulasi agresif dari Bandar.\n"
+                                "* **Tindakan (SOP Swing):** **PANTAU KETAT (WATCHLIST)**. Saham sedang mengumpulkan tenaga. Tunggu hingga muncul *candle* hijau dengan 'Volume Meledak' sebagai sinyal konfirmasi untuk *entry*.")
+
+                elif trend_status == "🔴 DOWNTREND":
+                    if sm_status == "🐳 AKUMULASI":
+                        st.info("🕵️ **STATUS: ANOMALI TURUN (FASE MARK-DOWN / ACCUMULATION)**\n\n"
+                                "* **Kondisi:** Harga anjlok di bawah MA20, TAPI Smart Money malah mendeteksi adanya Uang Masuk (Akumulasi).\n"
+                                "* **Analisis:** Ini sering terjadi saat Bandar sengaja menjatuhkan harga untuk memicu kepanikan (Cut Loss Ritel), sementara mereka diam-diam menampung barang di harga bawah.\n"
+                                "* **Tindakan (SOP Swing):** **JANGAN TANGKAP PISAU JATUH**. Masukkan ke *Watchlist* utama Anda. Tunggu sampai harga berbalik arah menembus garis MA20 ke atas, baru lakukan pembelian.")
+                    else:
+                        st.error("☠️ **STATUS: SAKIT PARAH (DOWNTREND + DISTRIBUSI)**\n\n"
+                                 "* **Kondisi:** Secara teknikal harga rusak (di bawah MA20), diperparah dengan Bandar yang terus jualan buang barang.\n"
+                                 "* **Analisis:** Jika ada *candle* hijau panjang di fase ini (seperti kasus NZIA), itu 90% hanyalah *Dead Cat Bounce* (pantulan jebakan / teknikal rebound sesaat) sebelum longsor lebih dalam.\n"
+                                 "* **Tindakan (SOP Swing):** **JAUHI SAHAM INI**. Jangan pernah melawan tren turun yang divalidasi oleh keluarnya uang besar.")
+                # --- BATAS SUNTIKAN KODE ---
+
+                # 5. MENANAMKAN GRAFIK TRADINGVIEW (Ala Stockbit)
+                import streamlit.components.v1 as components
+                st.markdown("<br>", unsafe_allow_html=True)
+                components.html(f"""
+                <div class="tradingview-widget-container">
+                  <div id="tv_kaca_pembesar_{ticker_input}"></div>
+                  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+                  <script type="text/javascript">
+                  new TradingView.widget(
+                  {{
+                  "width": "100%",
+                  "height": 500,
+                  "symbol": "{ticker_tv}",
+                  "interval": "D",
+                  "timezone": "Asia/Jakarta",
+                  "theme": "light",
+                  "style": "1",
+                  "locale": "id",
+                  "enable_publishing": false,
+                  "backgroundColor": "#ffffff",
+                  "hide_top_toolbar": false,
+                  "hide_legend": false,
+                  "save_image": false,
+                  "container_id": "tv_kaca_pembesar_{ticker_input}",
+                  "studies": [
+                    "Volume@tv-basicstudies",
+                    "MASimple@tv-basicstudies"
+                  ]
+                }}
+                  );
+                  </script>
+                </div>
+                """, height=500)
+
             else:
-                st.error("Data saham tidak ditemukan.")
-        except:
-            st.error("Gagal menarik data. Pastikan kode benar.")
+                st.error("Data saham tidak ditemukan. Pastikan kodenya benar.")
+        except Exception as e:
+            st.error(f"Gagal menarik data. Error: {e}")
 
 
 # --- 5. SCREENER MASAL LQ45 (RADAR UTAMA) ---
